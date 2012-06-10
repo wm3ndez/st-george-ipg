@@ -1,0 +1,117 @@
+###############################################################################
+#           	    	     webpayC++ - Makefile                             #
+###############################################################################
+#
+# How to use this Makefile.
+#
+# Type 'make -f makefileC++' at the command prompt to generate a test file.
+# Type 'make -f makefileC++ clean' to remove all generated files.
+#
+###############################################################################
+
+#
+# Declare variables.
+#
+# DO NOT MODIFY THE DISTNAME OR VERSION properties unless specifically advised by your Webpay representative.
+DISTNAME		= webpayC++
+VERSION			= 3.3
+LIB_VERSION     = 1.17
+OBJ_EXTENTION_32BIT = .i386
+OBJ_EXTENTION_64BIT = .x86_64
+LIB_NAME = libwebpayclient
+LIB_EXTENTION   = .so
+LIB_NAME_FINAL  = $(LIB_NAME)$(LIB_EXTENTION)
+LIB_NAME_WITH_VERSION=$(LIB_NAME).$(LIB_VERSION)$(LIB_EXTENTION)
+LIB_NAME_32BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_32BIT)
+LIB_NAME_64BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_64BIT)
+CLIENT_LIBRARY	= $(LIB_NAME_FINAL)
+CC         		= gcc
+DEST_DIR		= c++
+CREATED_FILES	= $(DEST_DIR)/webpay_wrap.c $(DEST_DIR)/webpay_perl.pm $(DEST_DIR)/webpay.c $(DEST_DIR)/webpay.h $(DEST_DIR)/webpay.i $(DEST_DIR)/webpay.php $(DEST_DIR)/php_webpay.h $(DEST_DIR)/*.log
+#FILES_IN_DIST	= BaseTest.cpp StatusCheck.cpp BPlatform.h BTypes.h libwebpayclient.so Makefile run_base_test.sh run_status_test.sh webpayclient.h
+SRC_FILE_BASE	= $(DEST_DIR)/BaseTest.cpp
+OBJ_FILE_BASE	= $(DEST_DIR)/baseTest
+SRC_FILE_STATUS	= $(DEST_DIR)/StatusCheck.cpp
+OBJ_FILE_STATUS	= $(DEST_DIR)/statusCheck
+FILES_TO_CLEAN	= 
+LINK_COMMAND    = ln -sf
+CREATE_LIBRARY  = #Set below
+
+CFLAGS = -fPIC -DLINUX
+
+OBJS = baseTest 
+SRCS = BaseTest.cpp
+STATUS_SRC = StatusCheck.cpp
+STATUS_OBJS = statusCheck
+
+# -- auto detect operating environment
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+	# 64 bit operating environment detected, set the appropriate client libraries to use
+   CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_64BIT) $(CLIENT_LIBRARY)
+else
+	# 32 bit operating environment detected, set the appropriate client libraries to use
+   CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_32BIT) $(CLIENT_LIBRARY)
+endif
+
+
+#
+# Make the Webpay PHP 5 Library.
+# NB: This is the step that runs when 'make' is entered at the command prompt.
+#
+all : setupCommands setVersionInfo compileStep copyWebpayLib
+	@echo
+	@echo Made $(WEBPAY_LIBRARY) : version - $(VERSION)
+	@echo Build process has completed
+	@echo ----------------------------------------
+	@echo
+
+setupCommands :
+	@echo 
+	@echo ----------------------------------------
+	@echo Detected a $(LBITS) operating environment
+	@echo using $(PERL_REF)
+	$(CREATE_LIBRARY)
+
+setVersionInfo :
+	@echo Checking sed version
+	sed --version
+	@echo ----------------------------------------
+	@echo Replacing placeholder variables in source files with current values using the sed command.
+	sed -i -e 's/__CLIENT_TYPE__/$(DISTNAME)/g' -e 's/__VERSION__/$(VERSION)/g' $(DEST_DIR)/webpayclient.h
+	@echo
+
+
+#
+# Compile wrapper methods from the Webpay Library
+#
+compileStep : 
+	@echo 
+	@echo ----------------------------------------
+	@echo Display Compiler version
+	$(CC) -dumpversion
+	@echo Compiling to create $(OBJ_FILE_BASE) and $(OBJ_FILE_STATUS)
+	$(CC) $(CFLAGS) ./$(CLIENT_LIBRARY) $(SRC_FILE_BASE) -o $(OBJ_FILE_BASE)
+	$(CC) $(CFLAGS) ./$(CLIENT_LIBRARY) $(SRC_FILE_STATUS) -o $(OBJ_FILE_STATUS)
+	
+copyWebpayLib :
+	@echo
+	@echo ----------------------------------------
+	@echo Copying $(CLIENT_LIBRARY) to $(DEST_DIR)
+	cp $(CLIENT_LIBRARY) $(DEST_DIR)
+
+#
+# Clean up files created by make
+#
+clean : 
+	@echo
+	@echo ----------------------------------------
+	@echo Cleaning up C++ files created by make
+	rm -vf $(CREATED_FILES) /*.log $(DEST_DIR)/$(CLIENT_LIBRARY) $(MISC_FILES_TO_CLEAN) $(OBJ_FILE_BASE) $(OBJ_FILE_STATUS)
+
+#
+# COPYRIGHT AND LICENCE
+#
+#  Copyright (c) 2008-2009. FIS Australasia Pty Ltd. (ABN 069 393 406). All rights reserved.
+#
+

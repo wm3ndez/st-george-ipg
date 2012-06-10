@@ -1,0 +1,217 @@
+###############################################################################
+#           	             webpayPHP - Makefile                             #
+###############################################################################
+#
+# Files required
+# - swig\webpay.c - the c program that provides the wrapper functions
+#   to the webpayclient.so library.
+# - swig\webpay.h - the c header file used by webpay.c
+# - swig\webpay.i - the SWIG interface file used by SWIG.
+#
+# Dependencies
+# SWIG must be installed on your system - see README for more information.
+#
+###############################################################################
+#
+# How to use this Makefile.
+#
+# 'make -f makefilePhp5' will generate the webpay php5 libraries.
+# 'make -f makefilePhp5 clean' will remove all generated files.
+#
+# NB: Ensure the current user has permission to copy files to the 
+# PHP_EXTENSIONS and LIB_LOCATION directories configured below. 
+# Otherwise run the make command with sudo
+#
+###############################################################################
+
+# -----------------------------------------------------------------------------
+# Declare Variables that can be customised for your implementation
+# -----------------------------------------------------------------------------
+# PHP_EXTENSIONS is the location where the Webpay extension will be stored. 
+# This value is defined in phpinfo() as extension_dir. 
+# Typical value would be: /usr/lib64/php/modules
+PHP_EXTENSIONS  = /usr/lib64/php/modules/
+
+# PHP_INCLUDE_DIR is the path to your PHP include directory. 
+# Typical value would be: /usr/include/php/
+PHP_INCLUDE_DIR = /usr/include/php/
+
+# LIB_LOCATION is the location of the Webpay Client library. Usually this will 
+# be stored in the same location as the Webpay extension (webpay_php.so)
+LIB_LOCATION    = $(PHP_EXTENSIONS)
+
+# SWIG is the swig command used on your system. 
+# Typically will just be 'swig' but full path may be required if it's 
+# not on the path i.e. : /usr/local/bin/swig
+SWIG            = swig
+
+# -----------------------------------------------------------------------------
+# Declare Variables that should not be modified unless advised
+# -----------------------------------------------------------------------------
+OBJ_EXTENTION_32BIT = .i386
+OBJ_EXTENTION_64BIT = .x86_64
+DISTNAME        = webpayPHP5
+VERSION	        = 3.3
+LIB_VERSION     = 1.17
+WEBPAYCLIENT    = webpayclient
+LIB_NAME        = lib$(WEBPAYCLIENT)
+LIB_EXTENTION   = .so
+LIB_NAME_FINAL  = $(LIB_NAME)$(LIB_EXTENTION)
+LIB_NAME_WITH_VERSION=$(LIB_NAME).$(LIB_VERSION)$(LIB_EXTENTION)
+LIB_NAME_32BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_32BIT)
+LIB_NAME_64BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_64BIT)
+CLIENT_LIBRARY  = $(LIB_NAME_FINAL)
+CC              = gcc
+DEST_DIR        = php5
+SWIG_OPTIONS    = -php5 $(DEST_DIR)/webpay.i
+CREATED_FILES   = $(DEST_DIR)/webpay_wrap.c $(DEST_DIR)/php_webpay.h $(DEST_DIR)/webpay.php $(DEST_DIR)/webpay.c $(DEST_DIR)/webpay.i $(DEST_DIR)/webpay.h
+SOURCE_FILES    = $(DEST_DIR)/webpay_wrap.c $(DEST_DIR)/webpay.c
+WEBPAY_LIBRARY  = webpay_php.so 
+FILES_TO_CLEAN  = $(DEST_DIR)/*.log
+TEST_SCRIPT     = $(DEST_DIR)/test.php
+LINK_COMMAND    = ln -sf
+CREATE_LIBRARY         = #Set below
+OPERATING_ENVIRONMENT  = #Set below
+PHP_VERSION            = #Set below
+
+# -----------------------------------------------------------------------------
+# Auto detect operating environment
+# -----------------------------------------------------------------------------
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+	# 64 bit environment detected, set the appropriate client library to use
+	CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_64BIT) $(CLIENT_LIBRARY)
+	OPERATING_ENVIRONMENT = $(OBJ_EXTENTION_64BIT)
+else
+	# 32 bit environment detected, set the appropriate client library to use
+	CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_32BIT) $(CLIENT_LIBRARY)
+	OPERATING_ENVIRONMENT = $(OBJ_EXTENTION_32BIT)
+endif
+
+# -----------------------------------------------------------------------------
+# Auto detect PHP VERSION
+# -----------------------------------------------------------------------------
+# Grab the major and minor verion numbers from php
+PHP_VERSION := $(shell php --version | grep --extended-regexp 'PHP [0-9].([0-9]|[0-9][0-9])' --only-matching)
+ifeq ($(PHP_VERSION),PHP 5.3)
+	#PHP version 5.3 detected
+	CONVERT_COMMAND = 	sed -i -e 's/zend_error_noreturn/zend_error/g'  $(DEST_DIR)/webpay_wrap.c
+	CONVERT_MESSAGE = Post SWIG conversion required
+else
+	# Older PHP version detected
+	CONVERT_COMMAND = # Not required
+	CONVERT_MESSAGE = Post SWIG conversion is NOT required
+endif
+
+
+# -----------------------------------------------------------------------------
+# Compile Flags
+# -----------------------------------------------------------------------------
+# NB: the ORIGIN flag below lets the libwebpayclient library load from a path 
+# relative to the webpay_php library. 
+CFLAGS			= -fPIC -Wl,-R,'$$ORIGIN' -shared  -I$(PHP_INCLUDE_DIR)main -I$(PHP_INCLUDE_DIR)Zend/ -I$(PHP_INCLUDE_DIR) -I$(PHP_INCLUDE_DIR)TSRM/ 
+
+# -----------------------------------------------------------------------------
+# Make the Webpay PHP 5 Library.
+# -----------------------------------------------------------------------------
+# NB: This is the step that runs when 'make' is entered at the command prompt.
+#
+all : setupCommands copyWebpayLib swig postSwigConversion compileStep copyWebpayExtension 
+	@echo
+	@echo Made $(WEBPAY_LIBRARY) : version - $(VERSION)
+	@echo Build process has completed
+	@echo ----------------------------------------
+	@echo
+
+setupCommands :
+	@echo 
+	@echo ----------------------------------------
+	@echo Detected a $(LBITS) operating environment
+	$(CREATE_LIBRARY)
+
+# -----------------------------------------------------------------------------
+# Run SWIG - generates language specific wrapper methods for libwebpayclient.so
+# SWIG can be downloaded from http://www.swig.org 
+# See the README file for more details.
+# -----------------------------------------------------------------------------
+swig : forceit
+	@echo
+	@echo ----------------------------------------
+	@echo Copying and updating the version number and client type in the wrapper code
+	cp swig/* $(DEST_DIR)/
+	@echo ----------------------------------------
+	@echo Checking sed version
+	sed --version
+	@echo ----------------------------------------
+	@echo Replacing placeholder variables in source files with current values using the sed command.
+	sed -i -e 's/__CLIENT_TYPE__/$(DISTNAME)/g' -e 's/__VERSION__/$(VERSION)/g' $(DEST_DIR)/webpay.c
+	sed -i -e 's/__CLIENT_TYPE__/$(DISTNAME)/g' -e 's/__VERSION__/$(VERSION)/g' -e 's/__CORE_LIB_VERSION__/$(LIB_VERSION)/g' -e 's/__CORE_LIB_NAME__/$(LIB_NAME_FINAL)/g' -e 's/__WEBPAY_PHP_LIB_NAME__/$(WEBPAY_LIBRARY)/g' -e 's/__OPERATING_ENVIRONMENT__/$(OPERATING_ENVIRONMENT)/g' $(DEST_DIR)/webpay.i
+	@echo
+	@echo ----------------------------------------
+	@echo Checking SWIG version
+	$(SWIG) -version
+	@echo ----------------------------------------
+	@echo Running SWIG to create wrapper files
+	$(SWIG) $(SWIG_OPTIONS)
+	@echo SWIG completed.
+
+# -----------------------------------------------------------------------------
+# Post Swig Conversion
+# This is only required for PHP 5.3.2 and above. As the SWIG library is yet to
+# be updated to handle the change in error libraries
+# -----------------------------------------------------------------------------
+postSwigConversion :
+	@echo
+	@echo ----------------------------------------
+	@echo $(CONVERT_MESSAGE)
+	@echo ----------------------------------------
+	$(CONVERT_COMMAND)
+	@echo Post Swig Conversion Completed.
+
+# -----------------------------------------------------------------------------
+# forceit forces the execution of a target
+# -----------------------------------------------------------------------------
+forceit:
+
+# -----------------------------------------------------------------------------
+# Compile wrapper methods from the Webpay Library
+# -----------------------------------------------------------------------------
+compileStep : 
+	@echo 
+	@echo ----------------------------------------
+	@echo Display Compiler version
+	$(CC) -dumpversion
+	@echo Compiling to create $(WEBPAY_LIBRARY)
+	$(CC) $(CFLAGS) $(SOURCE_FILES) -o $(DEST_DIR)/$(WEBPAY_LIBRARY)
+	
+copyWebpayLib :
+	@echo
+	@echo ----------------------------------------
+	@echo Copying $(CLIENT_LIBRARY) to $(LIB_LOCATION)
+	cp -p $(CLIENT_LIBRARY) $(LIB_LOCATION)
+	cp -p $(CLIENT_LIBRARY) $(DEST_DIR)
+
+copyWebpayExtension :
+	@echo
+	@echo ----------------------------------------
+	@echo Copying $(WEBPAY_LIBRARY) to $(PHP_EXTENSIONS)
+	cp -p $(DEST_DIR)/$(WEBPAY_LIBRARY) $(PHP_EXTENSIONS)
+
+# -----------------------------------------------------------------------------
+# Clean up files created by SWIG and make
+# -----------------------------------------------------------------------------
+clean : 
+	@echo
+	@echo ----------------------------------------
+	@echo Cleaning up files created by SWIG and make
+	rm -vf $(CREATED_FILES) $(DEST_DIR)/$(WEBPAY_LIBRARY) /*.log $(DEST_DIR)/$(CLIENT_LIBRARY) $(FILES_TO_CLEAN)
+	@echo Cleaning up installed library files
+	rm -vf $(LIB_LOCATION)/$(CLIENT_LIBRARY) $(PHP_EXTENSIONS)/$(WEBPAY_LIBRARY)
+
+#
+# COPYRIGHT AND LICENCE
+#
+#  Copyright (c) 2008-2009. FIS Australasia Pty Ltd. (ABN 069 393 406). 
+#  All rights reserved.
+#
+

@@ -1,0 +1,148 @@
+###############################################################################
+#           			     webpayPerl5 - Makefile                           #
+###############################################################################
+#
+# Files required
+# - swig\webpay.c - the c program that provides the wrapper functions
+#						     to the webpayclient.so library.
+# - swig\webpay.h - the c header file used by webpay.c
+# - swig\webpay.i - the SWIG interface file used by SWIG.
+#
+# Dependencies
+# SWIG must be installed on your system - see README for more information.
+#
+###############################################################################
+#
+# How to use this Makefile.
+#
+# Type 'make -f makefilePerl5' at the command prompt to generate the webpay perl 5 library.
+# Type 'make -f makefilePerl5 clean' to remove all generated files.
+#
+###############################################################################
+
+#
+# Declare Variables 
+#
+# DO NOT MODIFY THE DISTNAME OR VERSION properties unless specifically advised by your Webpay representative.
+DISTNAME		= webpayPerl5
+VERSION			= 3.3
+LIB_VERSION     = 1.17
+SWIG			= swig
+OBJ_EXTENTION_32BIT = .i386
+OBJ_EXTENTION_64BIT = .x86_64
+LIB_NAME = libwebpayclient
+LIB_EXTENTION   = .so
+LIB_NAME_FINAL  = $(LIB_NAME)$(LIB_EXTENTION)
+LIB_NAME_WITH_VERSION=$(LIB_NAME).$(LIB_VERSION)$(LIB_EXTENTION)
+LIB_NAME_32BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_32BIT)
+LIB_NAME_64BIT  = $(LIB_NAME_WITH_VERSION)$(OBJ_EXTENTION_64BIT)
+PERL_REF_32BIT  = /usr/lib/perl5/5.8.8/i386-linux-thread-multi/CORE
+PERL_REF_64BIT  = /usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/CORE
+CLIENT_LIBRARY	= $(LIB_NAME_FINAL)
+CC         		= gcc
+DEST_DIR		= perl5
+SWIG_OPTIONS	= -perl5 -module webpay_perl $(DEST_DIR)/webpay.i
+CREATED_FILES	= $(DEST_DIR)/webpay_wrap.c $(DEST_DIR)/webpay_perl.pm $(DEST_DIR)/webpay.c $(DEST_DIR)/webpay.h $(DEST_DIR)/webpay.i
+SOURCE_FILES	= $(DEST_DIR)/webpay_wrap.c $(DEST_DIR)/webpay.c
+WEBPAY_LIBRARY	= webpay_perl.so
+FILES_TO_CLEAN	= $(DEST_DIR)/*.log
+TEST_SCRIPT		= perl5/test.pl
+LINK_COMMAND    = ln -sf
+CREATE_LIBRARY  = #Set below
+
+# -- auto detect operating environment
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+	# 64 bit operating environment detected, set the appropriate client libraries to use
+   CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_64BIT) $(CLIENT_LIBRARY)
+   PERL_REF = $(PERL_REF_64BIT)
+else
+	# 32 bit operating environment detected, set the appropriate client libraries to use
+   CREATE_LIBRARY = $(LINK_COMMAND) $(LIB_NAME_32BIT) $(CLIENT_LIBRARY)
+   PERL_REF = $(PERL_REF_32BIT)
+endif
+
+# -- Additional Variables
+CFLAGS     		= -fPIC -shared -DLINUX -D_GNU_SOURCE -I$(PERL_REF) ./$(CLIENT_LIBRARY) -Xlinker -rpath ./
+
+#
+# Make the Webpay Perl 5 Library.
+# NB: This is the step that runs when 'make' is entered at the command prompt.
+#
+all : setupCommands swig compileStep copyWebpayLib
+	@echo
+	@echo Made $(WEBPAY_LIBRARY) : version - $(VERSION)
+	@echo Build process has completed
+	@echo ----------------------------------------
+	@echo
+
+setupCommands :
+	@echo 
+	@echo ----------------------------------------
+	@echo Detected a $(LBITS) operating environment
+	@echo using $(PERL_REF)
+	$(CREATE_LIBRARY)
+
+#
+# Run SWIG - generates language specific wrapper methods for libwebpayclient.so
+# SWIG can be downloaded from http://www.swig.org 
+# See the README file for more details.
+#
+swig : forceit
+	@echo
+	@echo ----------------------------------------
+	@echo Copying and updating the version number and client type in the wrapper code
+	cp swig/* $(DEST_DIR)/
+	@echo ----------------------------------------
+	@echo Checking sed version
+	sed --version
+	@echo ----------------------------------------
+	@echo Replacing placeholder variables in source files with current values using the sed command.
+	sed -i -e 's/__CLIENT_TYPE__/$(DISTNAME)/g' -e 's/__VERSION__/$(VERSION)/g' $(DEST_DIR)/webpay.c
+	@echo
+	@echo ----------------------------------------
+	@echo Checking SWIG version
+	$(SWIG) -version
+	@echo ----------------------------------------
+	@echo Running SWIG to create wrapper files
+	$(SWIG) $(SWIG_OPTIONS)
+	@echo SWIG completed.
+
+#
+# forceit forces the execution of a target
+#
+forceit:
+
+#
+# Compile wrapper methods from the Webpay Library
+#
+compileStep : 
+	@echo 
+	@echo ----------------------------------------
+	@echo Display Compiler version
+	$(CC) -dumpversion
+	@echo ----------------------------------------
+	@echo Compiling to create $(WEBPAY_LIBRARY)
+	$(CC) $(CFLAGS) $(SOURCE_FILES) -o $(DEST_DIR)/$(WEBPAY_LIBRARY)
+	
+copyWebpayLib :
+	@echo
+	@echo ----------------------------------------
+	@echo Copying $(CLIENT_LIBRARY) to $(DEST_DIR)
+	cp -p $(CLIENT_LIBRARY) $(DEST_DIR)
+
+#
+# Clean up files created by SWIG and make
+#
+clean : 
+	@echo
+	@echo ----------------------------------------
+	@echo Cleaning up files created by SWIG and make
+	rm -vf $(CREATED_FILES) $(DEST_DIR)/$(WEBPAY_LIBRARY) /*.log $(DEST_DIR)/$(CLIENT_LIBRARY) $(FILES_TO_CLEAN)
+
+#
+# COPYRIGHT AND LICENCE
+#
+#  Copyright (c) 2008-2009. FIS Australasia Pty Ltd. (ABN 069 393 406). All rights reserved.
+#
+

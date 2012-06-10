@@ -1,0 +1,235 @@
+###############################################################################
+#                             webpay SWIG - README                            #
+###############################################################################
+
+This document was last updated for version 3.2 of webpay SWIG API.
+
+The Webpay SWIG API enables web site developers to efficiently add credit card
+transaction processing to their products using many different programming 
+languages
+
+###############################################################################
+# Dependencies
+###############################################################################
+webpay SWIG API depends on the following:
+
+1. A copy of the Webpay client library file 'libwebpayclient.so'. This file 
+   is shipped in 32bit (libwebpayclient.1.16.so.i386) and 
+   64bit editions (libwebpayclient.1.16.so.x86_64). 
+
+2. SWIG (http://www.swig.org) must be installed on your system.
+   SWIG (Simplified Wrapper and Interface Generator) is an interface compiler 
+   that connects programs written in C and C++ with scripting languages such 
+   as Perl, PHP, Python, Ruby, and Tcl.
+   SWIG has been used in this instance to create wrapper methods to the 
+   Webpay client library that can be called directly from other programming
+   languages.
+   The PHP5 and Perl 5 implementation require SWIG version 1.3.35 or higher.
+   If this version is not available in your distributions package manager,
+   then a manual download, build and install of SWIG may be required.
+   If swig is not located on the system path, please update the makefiles, 
+   to point to the absolute path to the SWIG executable.
+
+3. sed (The stream Editor) that supports the -i flag.
+   The sed command is only used during the make process and is used to 
+   insert some version information into the source files.
+   If you systems does not support sed, then you can obtain a version from
+   here: http://www.gnu.org/software/sed/
+
+###############################################################################
+# Distributed Files.
+###############################################################################
+WebpaySWIG is distributed as a tar.gz tarball.
+- webpaySWIG-X.X.tar.gz (Where X.X is the current version number such as 
+                        webpaySWIG-3.0.tar.gz )
+
+The files contained within the tarball can be extracted with the following 
+command.
+
+tar -xzvf webpaySWIG-X.X.tar.gz 
+
+-------------------------------------------------------------------------------
+The tarball, webpaySWIG-X.X.tar.gz, contains the following files..
+
+  - webpaySWIG-X.X\MakefileC++    - To make the webpay C++ Library.
+  - webpaySWIG-X.X\MakefilePhp5   - To make the webpay PHP 5 Library.
+  - webpaySWIG-X.X\MakefilePerl   - To make the webpay PERL 5 Library.
+  - webpaySWIG-X.X\README         - This file.
+  - webpaySWIG-X.X\libwebpayclient.Y.Y.so.i386 
+  								  - The 32 bit version of the Core Webpay Library (where Y.Y is current 
+  								  version of the Webpay Core Library such as libwebpayclient.1.16.so.i386)
+  - webpaySWIG-X.X\libwebpayclient.Y.Y.so.x86_64 
+  								  - The 64 bit version of the Core Webpay Library (where Y.Y is current 
+  								  version of the Webpay Core Library such as libwebpayclient.1.16.so.x86_64)
+  - webpaySWIG-X.X\Webpay SWIG API Developers Guide.pdf 
+  							      - Detailed information about webpaySWIG.
+  - webpaySWIG-X.X\swig\webpay.c  - the c program that provides the wrapper 
+						            functions to the Webpay Core library.
+  - webpaySWIG-X.X\swig\webpay.h  - the c header file used by webpay.c
+  - webpaySWIG-X.X\swig\webpay.i  - the SWIG interface file used by SWIG.
+  - webpaySWIG-X.X\c++\baseTest.cpp
+  								  - a test class to perform a transaction
+  - webpaySWIG-X.X\c++\StatusCheck.cpp
+  								  - a test class to perform a status check
+  - webpaySWIG-X.X\c++\BPlatform.h- Contains the platform specific declarations 
+  								 	and definitions.
+  - webpaySWIG-X.X\c++\BTypes.h	  - The header file that contains helper 
+  									declarations and definitions
+  - webpaySWIG-X.X\c++\webpayclient.h  
+  								  - The header file contains declaration for 
+  								  	public methods
+  - webpaySWIG-X.X\c++\run_base_test.sh
+  								  - script to execute a test transaction
+  - webpaySWIG-X.X\c++\run_status_test.sh
+  								  - script to execute a status check test
+  - webpaySWIG-X.X\php5\test.php  - simple test script that can run from 
+                                    the command line... i.e. php test.php.
+  - webpaySWIG-X.X\php5\webpayForm.php 
+  								  - a more complicated test script 
+                                    that can be run from a browser.
+  - webpaySWIG-X.X\php5\webpayFormHandler.php 
+  								  - used by webpayForm.php
+  - webpaySWIG-X.X\perl5\test.pl  - simple test script that can run from 
+                                    the command line... i.e. perl test.pl
+  - webpaySWIG-X.X\perl5\statusCheck.pl 
+  								  - Sample code to perform a status check
+
+You may be required to edit the Makefiles to include the correct paths for 
+your environment. Consult your user documentation for more information.
+
+The following file is also required and is created by the relevant make files
+after determining if you system is running on 32bits or 64bits.
+  - libwebpayclient.so 			  - The Webpay Client Library 
+
+
+###############################################################################
+# Creating the Webpay SWIG Libraries
+###############################################################################
+
+The Webpay SWIG library contains three makefiles to build the C++, Perl5 and PHP5 
+APIs. To execute the Makefile type the following at the command prompt.
+
+make -f makefileC++
+make -f makefilePhp5
+make -f makfilePerl5
+
+If run successfully this will generate a number of files. All files required 
+to build the API will be copied to the directory specified by the DEST_DIR 
+property in the makefilePhp5 or makefilePerl5 files. The most important file
+it will create is the .so file. These files contains the wrapper methods 
+that can be accessed once the Library has been loaded into the system. The 
+Webpay API Library communicates with the Webpay Client Library file which in 
+turn talks to the WTS (Webpay Transaction Server).
+
+
+###############################################################################
+# Testing the Webpay SWIG API
+###############################################################################
+
+The following files represent the test files that are included in the distribution
+  - c++/run_base_test.sh
+  - c++/run_status_test.sh
+  - php5/test.php - simple test script that can run from the command line.
+  - php5/webpayForm.php - a more complicated test script that is run in a browser.
+  - php5/webpayFormHandler.php - used by webpayForm.php
+  - perl5/test.pl
+  - perl5/statusCheck.pl
+
+Ensure that the language of choice was successfully built by analysing the logs
+generated and ensuring no errors were encountered. The following library files
+are created for the languages :
+  - C++ - baseTest 
+  - C++ - statusCheck
+  - PHP5 - webpay_php.so
+  - Perl5 - webpay_perl.so
+
+Before testing the scripts you will need to make sure the following values
+are updated in the source code and the test script with those provided to you 
+by your Webpay Representative.
+
+put_ClientID ($webpayRef, THE_CLIENT_ID);
+put_CertificatePath ($webpayRef, THE_CERT_PATH);
+put_CertificatePassword ($webpayRef, THE_CERT_PASSWORD);
+setPort($webpayRef, THE_PORT);
+setServers($webpayRef, THE_SERVER);
+	
+
+Once this has done you can start testing by entering the following at
+the command prompt
+
+./run_base_test.sh
+./run_status_test.sh
+php test.php
+perl test.pl
+
+If you run into problems please check the troubleshooting section below.
+
+Please note that by default the logging is switched off. 
+When switched on please ensure the directory the log is to be written to has the write access.
+
+If the above test was successful then try testing the scripts via your
+web browser (You will need to ensure that your web server can access these
+files).
+
+e.g.
+http://yourhostname/public_html/test.php
+or
+http://yourhostname/public_html/webpayForm.php
+
+
+###############################################################################
+# Trouble Shooting.
+###############################################################################
+
+- Check that the Webpay Libraries (webpay_php.so, webpay_perl.so) file was generated 
+  successfully and is located in a directory that can be found by the dl() 
+  function. On most systems it should be accessible from the same directory as 
+  the php scripts. 
+- Check that the Webpay Client Library libwebpayclient.so file exists and 
+  is loaded into the required directory e.g. ./ or /usr/lib/ directory.
+- Check that the Webpay Client Library libwebpayclient.so is appropriate for your operating environment (i.e. 32 or 64bit)
+- Are you using the correct Client ID?
+- Are the OpenSSL libraries somewhere in the expected location or symbolically 
+  linked?
+- Is the location of the Webpay client certificate specified correctly?
+- Is the password correct for the Webpay client certificate?
+- Is the correct address and test port number specified for the Webpay gateway? 
+  You may want to use ping ensure that the address resolves correctly. If it 
+  does resolve correctly, the IP address of the gateway will be printed to the 
+  screen. If it does not, you will get an unknown host message.
+- Are you behind a firewall? You may need to contact your Security 
+  Administrator to ensure that the appropriate ports have been defined through
+  the firewall.
+- Do all the files have the appropriate permissions. 
+- If you have switched the internal Webpay Client Logging on ensure that the 
+  directory the log file is written to has write permissions.
+	put($webpayRef, "DEBUG", "ON");
+	put($webpayRef, "LOGFILE", "webpay.log");
+- Check your webservers error logs for messages. 
+
+  tail -f /usr/local/apache2/logs/error_logs
+
+To enable logging you will need to edit webpaySWIGX.X/swig/webpay.c and rebuild
+the API.
+
+Find the function debug_logging and comment out the return statement located on 
+the first line of the function. You will need to then re-compile the script and 
+make sure that the new .so file is moved to the correct place.
+void debug_logging(const char * message, ... )
+{
+	//return;
+	va_list args;
+	va_start(args, message);
+		vfprintf( stderr, message, args );
+	va_end(args);
+}
+
+If you still can't identity the problem, call your Webpay representative. Be 
+prepared to e-mail the output of the test program.
+
+###############################################################################
+# COPYRIGHT AND LICENCE
+###############################################################################
+
+Copyright (c) 2003-2009. FIS Australasia. All rights reserved.
+
