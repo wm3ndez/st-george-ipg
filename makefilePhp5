@@ -34,7 +34,7 @@ PHP_EXTENSIONS  = /usr/lib64/php/modules
 
 # PHP_INCLUDE_DIR is the path to your PHP include directory. 
 # Typical value would be: /usr/include/php/
-PHP_INCLUDE_DIR = /usr/local/zend/include/php/
+PHP_INCLUDE_DIR = /usr/include/php/
 
 # LIB_LOCATION is the location of the Webpay Client library. Usually this will 
 # be stored in the same location as the Webpay extension (webpay_php.so)
